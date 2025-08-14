@@ -217,8 +217,8 @@ export default function App() {
       <header className="border-b bg-white/80 backdrop-blur">
         <div className="max-w-6xl mx-auto flex items-center justify-between px-4 py-4">
           <div className="flex items-center gap-3">
-            <div className="size-10 grid place-items-center rounded-2xl border border-black/10 shadow-sm bg-white">
-              <span className="text-xl">🧽</span>
+            <div className="size-10 place-items-center">
+              <img src="/logo.png" alt="Logo" className="object-contain" />
             </div>
             <div>
               <h1 className="text-xl font-bold tracking-tight">{L.brand}</h1>
@@ -226,10 +226,10 @@ export default function App() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <a className="btn-ghost hidden sm:inline-flex" href="tel:+18655075786">{L.callNow}</a>
-            <a className="btn-whatsapp hidden sm:inline-flex" href={waLink} target="_blank" rel="noopener noreferrer">WhatsApp</a>
-            <a className="btn-ghost hidden sm:inline-flex" href="mailto:jmendozacleaingservices@gmail.com">{L.emailUs}</a>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-2 w-full sm:w-auto">
+            <a className="btn-ghost" href="tel:+18655075786">{L.callNow}</a>
+            <a className="btn-whatsapp" href={waLink} target="_blank" rel="noopener noreferrer">WhatsApp</a>
+            <a className="btn-ghost" href="mailto:jmendozacleaingservices@gmail.com">{L.emailUs}</a>
             <button className="pill pill--off" onClick={() => setLang(lang === "en" ? "es" : "en")}>
               {L.lang}
             </button>
