@@ -12,7 +12,7 @@ export type Extras = {
 
 export const PRICING = {
   minJob: 120,             // minimum charge
-  perSqFt: 0.12,           // base per square foot
+  perSqFt: 0.15,           // base per square foot
   bedroomAfterFirst: 15,   // per bedroom after the first
   bathroomEach: 25,        // per bathroom
   bedsheetPerBedroom: 10,  // change bedsheets (per bedroom)

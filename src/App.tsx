@@ -266,18 +266,34 @@ export default function App() {
             </div>
 
             {/* Extras */}
-            <div><Label>{L.blinds}</Label><YesNo val={extras.blinds} on={()=>toggle("blinds")} off={()=>setExtras(e=>({...e,blinds:false}))}/></div>
-            <div><Label>{L.oven}</Label><YesNo val={extras.oven} on={()=>toggle("oven")} off={()=>setExtras(e=>({...e,oven:false}))}/></div>
-            <div><Label>{L.windows}</Label><YesNo val={extras.windows} on={()=>toggle("windows")} off={()=>setExtras(e=>({...e,windows:false}))}/></div>
+            <div><Label>{L.blinds}</Label>
+              <YesNo val={extras.blinds} on={()=>toggle("blinds")} off={()=>setExtras(e=>({...e,blinds:false}))}/>
+              <p className="text-xs text-gray-500 mt-1">${PRICING.extrasFlat.blinds} {lang==="es"?"por servicio":"per service"}</p>
+            </div>
+            <div><Label>{L.oven}</Label>
+              <YesNo val={extras.oven} on={()=>toggle("oven")} off={()=>setExtras(e=>({...e,oven:false}))}/>
+              <p className="text-xs text-gray-500 mt-1">${PRICING.extrasFlat.oven} {lang==="es"?"por servicio":"per service"}</p>
+            </div>
             <div>
               <Label>{L.bedsheets}</Label>
               <YesNo val={extras.bedsheets} on={()=>toggle("bedsheets")} off={()=>setExtras(e=>({...e,bedsheets:false}))}/>
               <p className="text-xs text-gray-500 mt-1">${PRICING.bedsheetPerBedroom} {lang==="es"?"por dormitorio":"per bedroom"}</p>
             </div>
+            <div><Label>{L.fridge}</Label>
+              <YesNo val={extras.fridge} on={()=>toggle("fridge")} off={()=>setExtras(e=>({...e,fridge:false}))}/>
+              <p className="text-xs text-gray-500 mt-1">${PRICING.extrasFlat.fridge} {lang==="es"?"por servicio":"per service"}</p>
+            </div>
+            <div><Label>{L.cabinets}</Label>
+              <YesNo val={extras.cabinets} on={()=>toggle("cabinets")} off={()=>setExtras(e=>({...e,cabinets:false}))}/>
+              <p className="text-xs text-gray-500 mt-1">${PRICING.extrasFlat.cabinets} {lang==="es"?"por servicio":"per service"}</p>
+            </div>
+
+
+            {/* 
+            <div><Label>{L.windows}</Label><YesNo val={extras.windows} on={()=>toggle("windows")} off={()=>setExtras(e=>({...e,windows:false}))}/></div> 
             <div><Label>{L.laundry}</Label><YesNo val={extras.laundry} on={()=>toggle("laundry")} off={()=>setExtras(e=>({...e,laundry:false}))}/></div>
-            <div><Label>{L.fridge}</Label><YesNo val={extras.fridge} on={()=>toggle("fridge")} off={()=>setExtras(e=>({...e,fridge:false}))}/></div>
             <div><Label>{L.baseboards}</Label><YesNo val={extras.baseboards} on={()=>toggle("baseboards")} off={()=>setExtras(e=>({...e,baseboards:false}))}/></div>
-            <div><Label>{L.cabinets}</Label><YesNo val={extras.cabinets} on={()=>toggle("cabinets")} off={()=>setExtras(e=>({...e,cabinets:false}))}/></div>
+            */}
           </div>
         </section>
 
