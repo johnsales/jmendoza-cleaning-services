@@ -26,7 +26,7 @@ type Body = {
   };
 };
 
-export const onRequestPost: any = async ({ request, env })=> {
+export const onRequestPost: any = async ({ request, env }) => {
   try {
     const data = (await request.json()) as Body;
 

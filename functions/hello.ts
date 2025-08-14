@@ -1,0 +1,1 @@
+export const onRequestGet: any = () => new Response("Functions are working!");
