@@ -1,7 +1,6 @@
 // functions/api/quote.ts
-import { Resend } from "resend";
+// No imports needed. We call Resend's REST API via fetch.
 
-// Minimal, type-agnostic signature so Cloudflare builds it reliably
 export const onRequestPost = async (ctx: any): Promise<Response> => {
   const { request, env } = ctx;
 
@@ -51,14 +50,29 @@ export const onRequestPost = async (ctx: any): Promise<Response> => {
       </div>
     `;
 
-    // Read secrets from Pages env vars
-    const resend = new Resend(env.RESEND_API_KEY);
-    await resend.emails.send({
-      from: "Mendoza Quotes <notifications@resend.dev>",
-      to: [env.TO_EMAIL], // e.g. jmsvsmorone@gmail.com
-      subject,
-      html,
+    // Send email via Resend REST API
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${env.RESEND_API_KEY}`, // set in Pages > Settings > Environment variables
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        // If you don't have a verified domain yet, use 'onboarding@resend.dev'
+        from: "Mendoza Quotes <onboarding@resend.dev>",
+        to: [env.TO_EMAIL], // e.g. jmsvsmorone@gmail.com
+        subject,
+        html,
+      }),
     });
+
+    if (!res.ok) {
+      const text = await res.text();
+      return new Response(JSON.stringify({ ok: false, error: text }), {
+        status: res.status,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
 
     return new Response(JSON.stringify({ ok: true }), {
       headers: { "Content-Type": "application/json" },
