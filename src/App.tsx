@@ -139,9 +139,6 @@ export default function App() {
     return { base, bedroomsFee, bathroomsFee, bedsheetsFee, extrasFee }
   }, [sqft, bedrooms, bathrooms, extras])
 
-  const money = (n: number) =>
-    n.toLocaleString("en-US", { style: "currency", currency: "USD" })
-
   const toggle = (key: keyof Extras) =>
     setExtras(prev => ({ ...prev, [key]: !prev[key] }))
 
