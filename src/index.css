@@ -1,1 +1,48 @@
 @import "tailwindcss";
+
+/* base */
+@layer base {
+  body {
+    @apply bg-sky-50 text-gray-900 font-sans;
+    background:
+      radial-gradient(60rem 30rem at 10% -10%, rgba(14,165,233,.10), transparent 40%),
+      radial-gradient(50rem 25rem at 120% 10%, rgba(16,185,129,.08), transparent 45%);
+  }
+}
+
+/* components */
+@layer components {
+  .card { @apply rounded-2xl bg-white/90 backdrop-blur border border-black/5 shadow-sm; }
+
+  .btn {
+    @apply inline-flex items-center justify-center rounded-2xl px-4 py-2 transition
+           focus:outline-none focus:ring-2 focus:ring-offset-2;
+  }
+  .btn-primary {
+    @apply inline-flex items-center justify-center rounded-2xl px-4 py-2 border
+           bg-teal-500 text-white hover:bg-teal-600 active:bg-teal-700
+           border-teal-500 focus:ring-2 focus:ring-offset-2 focus:ring-teal-300;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center rounded-2xl px-4 py-2 border
+           bg-white text-gray-800 border-black/10 hover:border-black/20;
+  }
+  /* WhatsApp button */
+  .btn-whatsapp {
+    @apply inline-flex items-center justify-center rounded-2xl px-4 py-2 border
+           bg-emerald-500 text-white hover:bg-emerald-600 active:bg-emerald-700
+           border-emerald-500 focus:ring-2 focus:ring-offset-2 focus:ring-emerald-300;
+  }
+
+  .pill { @apply rounded-full border px-4 py-1.5 text-sm font-medium transition; }
+  .pill--on  { @apply bg-teal-500 text-white border-teal-500; }
+  .pill--off { @apply bg-white text-gray-700 border-black/10 hover:border-black/20; }
+
+  /* modal: scrollable with sticky footer */
+  .modal-overlay { @apply fixed inset-0 bg-black/40 backdrop-blur-sm grid place-items-center p-4 z-50; }
+  .modal { @apply rounded-2xl bg-white/95 backdrop-blur border border-black/5 shadow-lg w-full max-w-lg; max-height: 85vh; overflow-y: auto; }
+  .modal-body { @apply p-6; }
+  .modal-actions { @apply sticky bottom-0 bg-white/95 backdrop-blur border-t border-black/5 px-6 py-3 flex items-center justify-end gap-2; }
+}
+
+@keyframes pop { from{ transform: scale(.97); opacity:0 } to{ transform: scale(1); opacity:1 } }
