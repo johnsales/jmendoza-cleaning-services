@@ -227,17 +227,19 @@ export default function App() {
           </div>
 
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-2 w-full sm:w-auto">
-            <button className="pill pill--off flex items-center gap-1" onClick={() => setLang(lang === "en" ? "es" : "en")}>
-              {lang === "en" ? (
-                <>
-                  <span role="img" aria-label="Spanish flag">🇪🇸</span> Español
-                </>
-              ) : (
-                <>
-                  <span role="img" aria-label="US flag">🇺🇸</span> English
-                </>
-              )}
-            </button>
+            <div className="flex justify-center w-full sm:w-auto">
+              <button className="pill pill--off flex items-center gap-1 w-auto" onClick={() => setLang(lang === "en" ? "es" : "en")}>
+                {lang === "en" ? (
+                  <>
+                    <span role="img" aria-label="Spanish flag">🇪🇸</span> Español
+                  </>
+                ) : (
+                  <>
+                    <span role="img" aria-label="US flag">🇺🇸</span> English
+                  </>
+                )}
+              </button>
+            </div>
             <a className="btn-ghost" href="tel:+18655075786">{L.callNow}</a>
             <a className="btn-ghost" href="mailto:jmendozacleaingservices@gmail.com">{L.emailUs}</a>
             <a className="btn-whatsapp" href={waLink} target="_blank" rel="noopener noreferrer">WhatsApp</a>
