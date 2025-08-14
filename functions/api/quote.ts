@@ -1,78 +1,61 @@
 // functions/api/quote.ts
-import type { PagesFunction } from "@cloudflare/workers-types";
 import { Resend } from "resend";
 
-interface Env {
-  RESEND_API_KEY: string;
-  TO_EMAIL: string;
-}
+// Minimal, type-agnostic signature so Cloudflare builds it reliably
+export const onRequestPost = async (ctx: any): Promise<Response> => {
+  const { request, env } = ctx;
 
-type Body = {
-  lang: "en" | "es";
-  quote: {
-    sqft: number;
-    bedrooms: number;
-    bathrooms: number;
-    extras: Record<string, boolean>;
-    total: number;
-  };
-  booking: null | {
-    name: string;
-    email: string;
-    phone: string;
-    address: string;
-    date: string;
-    notes: string;
-  };
-};
-
-export const onRequestPost: any = async ({ request, env }) => {
   try {
-    const data = (await request.json()) as Body;
+    const data = await request.json();
 
-    const resend = new Resend(env.RESEND_API_KEY);
+    const lang = data?.lang === "es" ? "es" : "en";
+    const quote = data?.quote ?? {};
+    const booking = data?.booking ?? null;
 
-    const subject =
-      data.lang === "es"
-        ? `Nueva cotización de limpieza - ${data.booking?.name ?? "Cliente"}`
-        : `New cleaning quote - ${data.booking?.name ?? "Customer"}`;
-
+    const extras = quote.extras ?? {};
     const extrasList =
-      Object.entries(data.quote.extras)
+      Object.entries(extras)
         .filter(([, v]) => v)
         .map(([k]) => k)
-        .join(", ") || (data.lang === "es" ? "Ninguno" : "None");
+        .join(", ") || (lang === "es" ? "Ninguno" : "None");
+
+    const subject =
+      lang === "es"
+        ? `Nueva cotización de limpieza - ${booking?.name ?? "Cliente"}`
+        : `New cleaning quote - ${booking?.name ?? "Customer"}`;
 
     const html = `
       <div style="font-family:Arial,Helvetica,sans-serif">
         <h2>Mendoza Cleaning Services</h2>
-        <p><b>Language:</b> ${data.lang}</p>
-        <h3>Quote</h3>
+        <h3>${lang === "es" ? "Cotización" : "Quote"}</h3>
         <ul>
-          <li>Sqft: ${data.quote.sqft}</li>
-          <li>Bedrooms: ${data.quote.bedrooms}</li>
-          <li>Bathrooms: ${data.quote.bathrooms}</li>
+          <li>Sqft: ${quote.sqft}</li>
+          <li>Bedrooms: ${quote.bedrooms}</li>
+          <li>Bathrooms: ${quote.bathrooms}</li>
           <li>Extras: ${extrasList}</li>
-          <li><b>Total:</b> $${data.quote.total.toFixed(2)}</li>
+          <li><b>Total:</b> $${Number(quote.total ?? 0).toFixed(2)}</li>
         </ul>
         ${
-          data.booking
-            ? `<h3>Booking details</h3>
+          booking
+            ? `<h3>${lang === "es" ? "Reserva" : "Booking details"}</h3>
                <ul>
-                 <li>Name: ${escapeHtml(data.booking.name)}</li>
-                 <li>Email: ${escapeHtml(data.booking.email)}</li>
-                 <li>Phone: ${escapeHtml(data.booking.phone)}</li>
-                 <li>Address: ${escapeHtml(data.booking.address)}</li>
-                 <li>Date: ${escapeHtml(data.booking.date)}</li>
-                 <li>Notes: ${escapeHtml(data.booking.notes)}</li>
+                 <li>Name: ${escapeHtml(booking.name ?? "")}</li>
+                 <li>Email: ${escapeHtml(booking.email ?? "")}</li>
+                 <li>Phone: ${escapeHtml(booking.phone ?? "")}</li>
+                 <li>Address: ${escapeHtml(booking.address ?? "")}</li>
+                 <li>Date: ${escapeHtml(booking.date ?? "")}</li>
+                 <li>Notes: ${escapeHtml(booking.notes ?? "")}</li>
                </ul>`
-            : "<p>(No booking info submitted)</p>"
+            : `<p>${lang === "es" ? "(Sin datos de reserva)" : "(No booking info submitted)"}</p>`
         }
-      </div>`;
+      </div>
+    `;
 
+    // Read secrets from Pages env vars
+    const resend = new Resend(env.RESEND_API_KEY);
     await resend.emails.send({
       from: "Mendoza Quotes <notifications@resend.dev>",
-      to: [env.TO_EMAIL],
+      to: [env.TO_EMAIL], // e.g. jmsvsmorone@gmail.com
       subject,
       html,
     });
@@ -80,8 +63,8 @@ export const onRequestPost: any = async ({ request, env }) => {
     return new Response(JSON.stringify({ ok: true }), {
       headers: { "Content-Type": "application/json" },
     });
-  } catch {
-    return new Response(JSON.stringify({ ok: false }), {
+  } catch (err: any) {
+    return new Response(JSON.stringify({ ok: false, error: String(err?.message ?? err) }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
     });
