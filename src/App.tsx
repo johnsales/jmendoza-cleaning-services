@@ -378,7 +378,7 @@ export default function App() {
 
       <footer className="text-center text-xs text-gray-500 py-8">
         © {new Date().getFullYear()} Mendoza Cleaning Services ·
-        {" "}<a className="underline-offset-2 hover:underline" href="tel:+18655075786">(865) 507-5786</a> ·
+        {" "}<a className="underline-offset-2 hover:underline" href="tel:+18655075786">(865) 507-5786 </a> ·
         {" "}<a className="underline-offset-2 hover:underline" href="mailto:jmendozacleaningservices@gmail.com">jmendozacleaningservices@gmail.com</a>
       </footer>
     </div>
