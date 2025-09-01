@@ -1,5 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react"
-import { calculateTotal, PRICING, type Extras } from "./pricing"
+import {
+  calculateTotal,
+  buildBreakdown,
+  RATES,
+  type Extras,
+  type PricingMode,
+  type VisitType,
+} from "./pricing"
 
 type Lang = "en" | "es"
 const t = {
@@ -23,8 +30,6 @@ const t = {
     total: "Estimated total",
     breakdown: "Price breakdown",
     base: "Base",
-    bedroomsFee: "Bedrooms (after first)",
-    bathroomsFee: "Bathrooms",
     bedsheetsFee: "Bedsheets",
     extras: "Extras",
     book: "Book it",
@@ -47,6 +52,18 @@ const t = {
     selected: "Selected services",
     none: "None",
     required: "Please fill name, email and phone.",
+
+    // new
+    pricingBy: "Pricing by",
+    bySqft: "Square footage",
+    byRooms: "Number of rooms",
+    visitType: "Visit type",
+    regular: "Regular",
+    firstVisit: "First visit",
+    moveOut: "Move-out",
+    deepClean: "Deep clean",
+    construction: "Construction cleanup",
+    roomsLine: "Rooms (beds or baths)",
   },
   es: {
     brand: "Mendoza Cleaning Services",
@@ -68,8 +85,6 @@ const t = {
     total: "Total estimado",
     breakdown: "Desglose de precio",
     base: "Base",
-    bedroomsFee: "Dormitorios (después del primero)",
-    bathroomsFee: "Baños",
     bedsheetsFee: "Sábanas",
     extras: "Extras",
     book: "Reservar",
@@ -92,6 +107,18 @@ const t = {
     selected: "Servicios seleccionados",
     none: "Ninguno",
     required: "Completa nombre, correo y teléfono.",
+
+    // new
+    pricingBy: "Calcular por",
+    bySqft: "Pies cuadrados",
+    byRooms: "Número de cuartos",
+    visitType: "Tipo de visita",
+    regular: "Regular",
+    firstVisit: "Primera visita",
+    moveOut: "Mudanza",
+    deepClean: "Limpieza profunda",
+    construction: "Limpieza de obra",
+    roomsLine: "Cuartos (dormitorios or baños)",
   },
 } as const
 
@@ -99,6 +126,11 @@ export default function App() {
   const [lang, setLang] = useState<Lang>("en")
   const L = t[lang]
 
+  // pricing hierarchy
+  const [mode, setMode] = useState<PricingMode>("sqft")
+  const [visit, setVisit] = useState<VisitType>("regular")
+
+  // inputs
   const [sqft, setSqft] = useState(1000)
   const [bedrooms, setBedrooms] = useState(2)
   const [bathrooms, setBathrooms] = useState(2)
@@ -119,25 +151,14 @@ export default function App() {
   const [open, setOpen] = useState(false)
 
   const total = useMemo(
-    () => calculateTotal(sqft, bedrooms, bathrooms, extras),
-    [sqft, bedrooms, bathrooms, extras]
+    () => calculateTotal(mode, visit, sqft, bedrooms, bathrooms, extras),
+    [mode, visit, sqft, bedrooms, bathrooms, extras]
   )
 
-  const breakdown = useMemo(() => {
-    const base = Math.max(PRICING.minJob, sqft * PRICING.perSqFt)
-    const bedroomsFee = Math.max(0, bedrooms - 1) * PRICING.bedroomAfterFirst
-    const bathroomsFee = Math.max(0, bathrooms) * PRICING.bathroomEach
-    const bedsheetsFee = extras.bedsheets ? bedrooms * PRICING.bedsheetPerBedroom : 0
-    const extrasFee =
-      (extras.blinds ? PRICING.extrasFlat.blinds : 0) +
-      (extras.oven ? PRICING.extrasFlat.oven : 0) +
-      (extras.windows ? PRICING.extrasFlat.windows : 0) +
-      (extras.laundry ? PRICING.extrasFlat.laundry : 0) +
-      (extras.fridge ? PRICING.extrasFlat.fridge : 0) +
-      (extras.baseboards ? PRICING.extrasFlat.baseboards : 0) +
-      (extras.cabinets ? PRICING.extrasFlat.cabinets : 0)
-    return { base, bedroomsFee, bathroomsFee, bedsheetsFee, extrasFee }
-  }, [sqft, bedrooms, bathrooms, extras])
+  const breakdown = useMemo(
+    () => buildBreakdown(mode, visit, sqft, bedrooms, bathrooms, extras),
+    [mode, visit, sqft, bedrooms, bathrooms, extras]
+  )
 
   const toggle = (key: keyof Extras) =>
     setExtras(prev => ({ ...prev, [key]: !prev[key] }))
@@ -162,15 +183,13 @@ export default function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           lang,
-          quote: { sqft, bedrooms, bathrooms, extras, total },
+          quote: { mode, visit, sqft, bedrooms, bathrooms, extras, total },
           booking: { name, email, phone, address, date, notes },
         }),
       })
       if (!res.ok) throw new Error("Request failed")
       setStatus("ok")
       setOpen(false)
-      // optional: reset fields
-      // setName(""); setEmail(""); setPhone(""); setAddress(""); setDate(""); setNotes("");
     } catch {
       setStatus("err")
     }
@@ -201,11 +220,24 @@ export default function App() {
 
   const selectedExtras = Object.entries(extras).filter(([,v])=>v).map(([k])=>k)
 
+  const visitLabel = {
+    regular: L.regular,
+    firstVisit: L.firstVisit,
+    moveOut: L.moveOut,
+    deepClean: L.deepClean,
+    construction: L.construction,
+  }[visit]
+
+  const modeText =
+    mode === "sqft"
+      ? `${sqft} sqft @ ${RATES.perSqFt[visit].toFixed(2)}/sqft`
+      : `${bedrooms + bathrooms} rooms @ $${RATES.perRoom[(visit === "construction" ? "deepClean" : visit) as keyof typeof RATES.perRoom]}`
+
   const waNumber = "18655075786" // your number, digits only
   const waText = encodeURIComponent(
     `${lang==="es" ? "Hola" : "Hi"}, ${
       lang==="es" ? "me interesa una limpieza" : "I'm interested in a cleaning"
-    }. ${L.total}: ${total.toFixed(2)} · ${sqft} sqft · ${bedrooms} ${L.bedrooms.toLowerCase()} · ${bathrooms} ${L.bathrooms.toLowerCase()} · ${L.extras}: ${
+    }. ${L.total}: ${total.toFixed(2)} · ${L.visitType}: ${visitLabel} · ${mode === 'sqft' ? L.bySqft : L.byRooms}: ${modeText} · ${L.extras}: ${
       selectedExtras.length ? selectedExtras.join(", ") : (lang==="es" ? "Ninguno" : "None")
     }`
   )
@@ -241,10 +273,9 @@ export default function App() {
               </button>
             </div>
             <a className="btn-ghost" href="tel:+18655075786">{L.callNow}</a>
-            <a className="btn-ghost" href="mailto:jmendozacleaingservices@gmail.com">{L.emailUs}</a>
+            <a className="btn-ghost" href="mailto:jmendozacleaningservices@gmail.com">{L.emailUs}</a>
             <a className="btn-whatsapp" href={waLink} target="_blank" rel="noopener noreferrer">WhatsApp</a>
           </div>
-
         </div>
       </header>
 
@@ -255,55 +286,108 @@ export default function App() {
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold">{L.getQuote}</h2>
             <div className="text-xs text-gray-500">
-              Base ${PRICING.perSqFt}/sqft · Min ${PRICING.minJob}
+              {mode === "sqft"
+                ? <>${RATES.perSqFt[visit].toFixed(2)}/sqft · Min ${RATES.minJob}</>
+                : <>Min ${RATES.minJob} · ${(() => {
+                    const v = (visit === "construction" ? "deepClean" : visit) as keyof typeof RATES.perRoom
+                    return RATES.perRoom[v]
+                  })()} per room</>}
             </div>
           </div>
 
+          {/* HIERARCHY PANEL */}
+          <div className="rounded-2xl border bg-gray-50 p-4 mb-6">
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div>
+                <Label>{L.pricingBy}</Label>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    className={`pill ${mode==='sqft'?'pill--on':'pill--off'}`}
+                    onClick={()=>setMode("sqft")}
+                  >
+                    {L.bySqft}
+                  </button>
+                  <button
+                    type="button"
+                    className={`pill ${mode==='rooms'?'pill--on':'pill--off'}`}
+                    onClick={()=>setMode("rooms")}
+                  >
+                    {L.byRooms}
+                  </button>
+                </div>
+              </div>
+              <div>
+                <Label>{L.visitType}</Label>
+                <select
+                  className="w-full rounded-2xl border px-3 py-2"
+                  value={visit}
+                  onChange={(e)=>setVisit(e.target.value as VisitType)}
+                >
+                  <option value="regular">{L.regular}</option>
+                  <option value="firstVisit">{L.firstVisit}</option>
+                  <option value="moveOut">{L.moveOut}</option>
+                  <option value="deepClean">{L.deepClean}</option>
+                  {mode === "sqft" && <option value="construction">{L.construction}</option>}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* CONDITIONAL INPUTS */}
           <div className="grid sm:grid-cols-2 gap-6">
-            <div>
-              <Label>{L.homeSqFt}</Label>
-              <Counter value={sqft} set={setSqft} min={200} step={50} />
-            </div>
-            <div>
-              <Label>{L.bedrooms}</Label>
-              <Counter value={bedrooms} set={setBedrooms} min={0} />
-              <p className="text-xs text-gray-500 mt-1">+${PRICING.bedroomAfterFirst} {lang==="es"?"después del primero":"after first bedroom"}</p>
-            </div>
-            <div>
-              <Label>{L.bathrooms}</Label>
-              <Counter value={bathrooms} set={setBathrooms} min={0} />
-              <p className="text-xs text-gray-500 mt-1">+${PRICING.bathroomEach} {lang==="es"?"por baño":"per bathroom"}</p>
-            </div>
+            {mode === "sqft" ? (
+              <>
+                <div className="sm:col-span-2">
+                  <Label>{L.homeSqFt}</Label>
+                  <Counter value={sqft} set={setSqft} min={200} step={50} />
+                </div>
+              </>
+            ) : (
+              <>
+                <div>
+                  <Label>{L.bedrooms}</Label>
+                  <Counter value={bedrooms} set={setBedrooms} min={0} />
+                  <p className="text-xs text-gray-500 mt-1 text-center">
+                    ${RATES.perRoom[(visit === "construction" ? "deepClean" : visit) as keyof typeof RATES.perRoom]} {lang==="es" ? "por dormitorio" : "per bedroom"}
+                  </p>
+                </div>
+                <div>
+                  <Label>{L.bathrooms}</Label>
+                  <Counter value={bathrooms} set={setBathrooms} min={0} />
+                  <p className="text-xs text-gray-500 mt-1 text-center">
+                    ${RATES.perRoom[(visit === "construction" ? "deepClean" : visit) as keyof typeof RATES.perRoom]} {lang==="es" ? "por baño" : "per bathroom"}
+                  </p>
+                </div>
+              </>
+            )}
 
             {/* Extras */}
+             <div className="sm:col-span-2 mt-6">
+              <h4 className="text-md font-semibold text-gray-700 mb-2">Extras:</h4>
+            </div>
+            
             <div><Label>{L.blinds}</Label>
               <YesNo val={extras.blinds} on={()=>toggle("blinds")} off={()=>setExtras(e=>({...e,blinds:false}))}/>
-              <p className="text-xs text-gray-500 mt-1">${PRICING.extrasFlat.blinds} {lang==="es"?"por servicio":"per service"}</p>
+              <p className="text-xs text-gray-500 mt-1">${RATES.extrasFlat.blinds} {lang==="es"?"por servicio":"per service"}</p>
             </div>
             <div><Label>{L.oven}</Label>
               <YesNo val={extras.oven} on={()=>toggle("oven")} off={()=>setExtras(e=>({...e,oven:false}))}/>
-              <p className="text-xs text-gray-500 mt-1">${PRICING.extrasFlat.oven} {lang==="es"?"por servicio":"per service"}</p>
+              <p className="text-xs text-gray-500 mt-1">${RATES.extrasFlat.oven} {lang==="es"?"por servicio":"per service"}</p>
             </div>
             <div>
               <Label>{L.bedsheets}</Label>
               <YesNo val={extras.bedsheets} on={()=>toggle("bedsheets")} off={()=>setExtras(e=>({...e,bedsheets:false}))}/>
-              <p className="text-xs text-gray-500 mt-1">${PRICING.bedsheetPerBedroom} {lang==="es"?"por dormitorio":"per bedroom"}</p>
+              <p className="text-xs text-gray-500 mt-1">${RATES.bedsheetPerBedroom} {lang==="es"?"por dormitorio":"per bedroom"}</p>
             </div>
             <div><Label>{L.fridge}</Label>
               <YesNo val={extras.fridge} on={()=>toggle("fridge")} off={()=>setExtras(e=>({...e,fridge:false}))}/>
-              <p className="text-xs text-gray-500 mt-1">${PRICING.extrasFlat.fridge} {lang==="es"?"por servicio":"per service"}</p>
+              <p className="text-xs text-gray-500 mt-1">${RATES.extrasFlat.fridge} {lang==="es"?"por servicio":"per service"}</p>
             </div>
             <div><Label>{L.cabinets}</Label>
               <YesNo val={extras.cabinets} on={()=>toggle("cabinets")} off={()=>setExtras(e=>({...e,cabinets:false}))}/>
-              <p className="text-xs text-gray-500 mt-1">${PRICING.extrasFlat.cabinets} {lang==="es"?"por servicio":"per service"}</p>
+              <p className="text-xs text-gray-500 mt-1">${RATES.extrasFlat.cabinets} {lang==="es"?"por servicio":"per service"}</p>
             </div>
-
-
-            {/* 
-            <div><Label>{L.windows}</Label><YesNo val={extras.windows} on={()=>toggle("windows")} off={()=>setExtras(e=>({...e,windows:false}))}/></div> 
-            <div><Label>{L.laundry}</Label><YesNo val={extras.laundry} on={()=>toggle("laundry")} off={()=>setExtras(e=>({...e,laundry:false}))}/></div>
-            <div><Label>{L.baseboards}</Label><YesNo val={extras.baseboards} on={()=>toggle("baseboards")} off={()=>setExtras(e=>({...e,baseboards:false}))}/></div>
-            */}
           </div>
         </section>
 
@@ -320,11 +404,19 @@ export default function App() {
           <div className="mt-4">
             <div className="text-sm font-semibold mb-2">{L.breakdown}</div>
             <ul className="text-sm divide-y divide-black/5">
-              <li className="flex justify-between py-1.5"><span>{L.base}</span><span>${breakdown.base.toFixed(2)}</span></li>
-              <li className="flex justify-between py-1.5"><span>{L.bedroomsFee}</span><span>${breakdown.bedroomsFee.toFixed(2)}</span></li>
-              <li className="flex justify-between py-1.5"><span>{L.bathroomsFee}</span><span>${breakdown.bathroomsFee.toFixed(2)}</span></li>
-              <li className="flex justify-between py-1.5"><span>{L.bedsheetsFee}</span><span>${breakdown.bedsheetsFee.toFixed(2)}</span></li>
-              <li className="flex justify-between py-1.5"><span>{L.extras}</span><span>${breakdown.extrasFee.toFixed(2)}</span></li>
+              {breakdown.kind === "sqft" ? (
+                <>
+                  <li className="flex justify-between py-1.5"><span>{L.base}</span><span>${breakdown.base.toFixed(2)}</span></li>
+                  <li className="flex justify-between py-1.5"><span>{L.homeSqFt} × ${breakdown.rate.toFixed(2)}/sqft</span><span>{breakdown.sqft}</span></li>
+                </>
+              ) : (
+                <>
+                  <li className="flex justify-between py-1.5"><span>{L.base}</span><span>${breakdown.base.toFixed(2)}</span></li>
+                  <li className="flex justify-between py-1.5"><span>{L.roomsLine} × ${breakdown.rate.toFixed(0)}</span><span>{breakdown.rooms}</span></li>
+                </>
+              )}
+              <li className="flex justify-between py-1.5"><span>{L.bedsheetsFee}</span><span>${breakdown.bedsheets.toFixed(2)}</span></li>
+              <li className="flex justify-between py-1.5"><span>{L.extras}</span><span>${breakdown.extras.toFixed(2)}</span></li>
             </ul>
           </div>
 
@@ -347,9 +439,16 @@ export default function App() {
               <div className="text-sm mb-4">
                 <div className="font-semibold mb-1">{L.selected}</div>
                 <ul className="list-disc pl-5 space-y-0.5">
-                  <li>{L.homeSqFt}: {sqft}</li>
-                  <li>{L.bedrooms}: {bedrooms}</li>
-                  <li>{L.bathrooms}: {bathrooms}</li>
+                  <li>{L.visitType}: {visitLabel}</li>
+                  {mode === "sqft" ? (
+                    <li>{L.bySqft}: {sqft} sqft</li>
+                  ) : (
+                    <>
+                      <li>{L.byRooms}: {bedrooms + bathrooms} rooms</li>
+                      <li>{L.bedrooms}: {bedrooms}</li>
+                      <li>{L.bathrooms}: {bathrooms}</li>
+                    </>
+                  )}
                   <li>{L.extras}: {selectedExtras.length ? selectedExtras.join(", ") : L.none}</li>
                   <li>{L.total}: ${total.toFixed(2)}</li>
                 </ul>
@@ -398,6 +497,7 @@ function Field(props: { label: string; value: string; onChange: (v:string)=>void
     </div>
   )
 }
+
 function FieldArea(props: { label: string; value: string; onChange: (v:string)=>void }) {
   return (
     <div>
