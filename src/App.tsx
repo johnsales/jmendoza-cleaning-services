@@ -198,19 +198,73 @@ export default function App() {
   const Label: React.FC<{children: React.ReactNode}> = ({children}) => (
     <label className="block text-sm font-semibold text-gray-800 mb-1">{children}</label>
   )
-  const Counter: React.FC<{value:number; set:(n:number)=>void; min?:number; step?:number;}> =
-  ({ value, set, min = 0, step = 1 }) => (
-    <div className="flex items-center gap-2">
-      <button type="button" className="btn-ghost px-3" onClick={() => set(Math.max(min, value - step))}>−</button>
-      <input
-        type="number"
-        className="w-full rounded-2xl border px-3 py-2 text-center"
-        value={value} min={min} step={step}
-        onChange={e => set(Number(e.target.value || 0))}
-      />
-      <button type="button" className="btn-ghost px-3" onClick={() => set(value + step)}>+</button>
-    </div>
-  )
+
+  
+  const Counter: React.FC<{
+    value: number;
+    set: (n: number) => void;
+    min?: number;
+    step?: number;
+  }> = ({ value, set, min = 0, step = 1 }) => {
+    const [raw, setRaw] = useState(String(value));
+
+    // Keep the local text in sync when value changes externally (via +/-)
+    useEffect(() => {
+      setRaw(String(value));
+    }, [value]);
+
+    const commit = () => {
+      const n = Number(raw);
+      if (Number.isFinite(n)) {
+        set(Math.max(min, n));
+      } else {
+        // If left empty or invalid, fall back to min
+        set(min);
+        setRaw(String(min));
+      }
+    };
+
+    return (
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          className="btn-ghost px-4 py-2 text-xl font-bold border-gray-800"
+          onClick={() => {
+            const next = Math.max(min, value - step);
+            set(next);
+            setRaw(String(next));
+          }}
+        >
+          −
+        </button>
+
+        <input
+          type="number"
+          className="w-full rounded-2xl border px-3 py-2 text-center"
+          // Use the local string so intermediate states ("" / "5") are allowed
+          value={raw}
+          // Don't put `min` on the input—let people type 5, then clamp on blur
+          step={step}
+          onChange={(e) => setRaw(e.target.value)}
+          onBlur={commit}
+          onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+        />
+
+        <button
+          type="button"
+          className="btn-ghost px-4 py-2 text-xl font-bold border-gray-800"
+          onClick={() => {
+            const next = value + step;
+            set(next);
+            setRaw(String(next));
+          }}
+        >
+          +
+        </button>
+      </div>
+    );
+  };
+
   const YesNo: React.FC<{val:boolean; on:()=>void; off:()=>void}> = ({val,on,off}) => (
     <div className="flex gap-2">
       <button type="button" className={`pill ${val ? "pill--on" : "pill--off"}`} onClick={on}>{L.yes}</button>
